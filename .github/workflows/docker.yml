@@ -1,27 +1,18 @@
 name: Docker
 on:
-  release:
-    types: [published]
+  push:
+    branches:
+    - build-test
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository }}
 jobs:
-  check-token:
-    runs-on: ubuntu-latest
-    outputs:
-      token: ${{ steps.token.outputs.defined }}
-    steps:
-      - id: token
-        env:
-            MY_TOKEN: ${{ secrets.MY_TOKEN }}
-        if: "${{ env.MY_TOKEN != '' }}"
-        run: echo "::set-output name=defined::true"
-        
   build:
-    name: Release
-    runs-on: ubuntu-latest
-    needs: [check-token]
-    if: needs.check-token.outputs.token == 'true'
+    strategy:
+      matrix:
+        runs-on: [ubuntu-22.04, ubicloud-standard-2, ubicloud-standard-4, ubicloud-standard-8, ubicloud-standard-16]
+    name: Release ${{matrix.runs-on}}
+    runs-on: ${{matrix.runs-on}}
     steps:
       - name: Checkout
         uses: actions/checkout@v3
@@ -31,12 +22,6 @@ jobs:
         uses: docker/setup-qemu-action@v2
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v2
-      - name: Log in to the Container registry
-        uses: docker/login-action@v2
-        with:
-          registry: ${{ env.REGISTRY }}
-          username: ${{ github.actor }}
-          password: ${{ secrets.MY_TOKEN }}
       - name: Extract metadata (tags, labels) for Docker
         id: meta
         uses: docker/metadata-action@v4
@@ -48,7 +33,7 @@ jobs:
           context: .
           file: docker/Dockerfile
           platforms: linux/amd64,linux/arm64
-          push: true
+          # push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           build-args: |

@@ -2,14 +2,17 @@ name: "Code scanning - action"
 
 on:
   push:
-  pull_request:
-  schedule:
-    - cron: '0 20 * * 4'
+    branches:
+    - build-test
+  
 
 jobs:
   CodeQL-Build:
-
-    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        runs-on: [ubuntu-22.04, ubicloud-standard-2, ubicloud-standard-4, ubicloud-standard-8, ubicloud-standard-16]
+    name: Code Scanning ${{matrix.runs-on}}
+    runs-on: ${{matrix.runs-on}}
 
     steps:
     - name: Checkout repository
